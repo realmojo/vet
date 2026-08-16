@@ -1,74 +1,89 @@
 import {
   DATA_UPDATED,
   DATA_YEAR,
-  featuredItems,
+  ITEM_KINDS,
+  THIN_ITEM_COUNT,
   formatWon,
   formatWonShort,
-  groupByCategory,
-  itemLabel,
-  listItemFees,
-  listItems,
+  indexSign,
+  itemStatsMap,
+  listRegions,
   priceRatio,
   ratioText,
-  relative,
-  relativeSign,
-  SCOPE_NOTE,
 } from "@/lib/fee-data";
-import { ITEM_HUB_SLUG, OFFICIAL_LINKS } from "@/lib/menu";
-import { GUIDES } from "@/lib/guides";
-import { CLASSES, CLASS_HUB_SLUG, REGIONS, REGION_HUB_SLUG } from "@/lib/scopes";
-import StatTile from "@/components/price/StatTile";
-import DataNotice from "@/components/price/DataNotice";
+import {
+  ITEM_HUB_SLUG,
+  featuredItems,
+  groupItems,
+  itemFullLabel,
+} from "@/lib/fee-items";
+import { REGION_HUB_SLUG, SIDOS } from "@/lib/regions";
+import {
+  ANIMALS,
+  FOOD_HUB_SLUG,
+  SAFETY_META,
+  countBySafety,
+  listFoods,
+} from "@/lib/foods";
+import StatTile from "@/components/fee/StatTile";
+import DataNotice from "@/components/fee/DataNotice";
+import FoodCard from "@/components/food/FoodCard";
 import Adsense from "@/components/Adsense";
 import { AD_SLOTS } from "@/lib/ads";
 
 export const revalidate = 300;
 
-/** 첫 화면에서 종별 차이를 보여줄 항목. 가장 많이 검색되는 비급여다. */
-const SHOWCASE_SLUG = "도수치료";
-
 export default async function HomePage() {
-  const items = await listItems();
-  const groups = groupByCategory(items);
-  const featured = featuredItems(items).slice(0, 10);
+  const [stats, regions, foods] = await Promise.all([
+    itemStatsMap(),
+    listRegions(),
+    listFoods(),
+  ]);
 
-  const showcase = items.find((i) => i.item_slug === SHOWCASE_SLUG) ?? null;
-  const showcaseRows = showcase ? await listItemFees(showcase.item_slug) : [];
-  const classOrder = new Map(CLASSES.map((c, i) => [c.slug, i]));
-  const byClass = showcaseRows
-    .filter((r) => r.scope_type === "class" && r.median_price !== null)
-    .sort((a, b) => (classOrder.get(a.scope) ?? 99) - (classOrder.get(b.scope) ?? 99));
-  const classBase = showcase?.class_median ?? 0;
+  const featured = featuredItems();
+  const groups = groupItems();
 
-  const widest = items
-    .filter((i) => i.scope_count >= 15 && i.class_count >= 5)
-    .map((i) => ({ item: i, ratio: priceRatio(i) }))
+  // 위험한 음식을 앞세운다. "강아지가 초콜릿 먹었어요" 가 가장 급한 검색이다.
+  const dangerous = foods.filter((f) => f.safety === "danger").slice(0, 6);
+
+  const solid = regions.filter((r) => r.item_count >= THIN_ITEM_COUNT);
+  const ranked = solid
+    .filter((r) => r.price_index !== null)
+    .sort((a, b) => (b.price_index ?? 0) - (a.price_index ?? 0));
+  const priciest = ranked.slice(0, 5);
+  const cheapest = ranked.slice(-5).reverse();
+
+  const widest = featured
+    .map((i) => ({ item: i, s: stats.get(i.slug) }))
+    .filter((x) => x.s)
+    .map((x) => ({ ...x, ratio: priceRatio(x.s!) }))
     .filter((x) => x.ratio !== null)
     .sort((a, b) => (b.ratio ?? 0) - (a.ratio ?? 0))
-    .slice(0, 8);
+    .slice(0, 5);
 
   return (
     <>
       <div className="page-head">
         <h1>
-          <span aria-hidden>🩺</span>
-          도수치료 10만원, 그런데 어디서 받느냐에 따라
+          <span aria-hidden>🐾</span>
+          같은 종합백신인데 동네마다 값이 다릅니다
         </h1>
         <p>
-          건강보험이 적용되지 않는 <strong>비급여</strong>는 병원이 값을 스스로
-          정합니다. 건강보험심사평가원이 공개한 {DATA_YEAR}년 자료로 항목별
-          금액과 지역·병원 종별 차이를 정리했습니다.
+          동물병원은 진료비를 스스로 정합니다. 농림축산식품부가 해마다 조사해
+          공개하는 자료로 <strong>시군구 {regions.length}곳</strong>의 진료비를
+          정리하고, 강아지·고양이가 먹어도 되는 음식{" "}
+          <strong>{foods.length}가지</strong>를 함께 담았습니다.
         </p>
       </div>
 
       <section className="stat-grid">
-        <StatTile label="공개 항목" value={`${items.length}개`} />
-        <StatTile label="지역" value={`${REGIONS.length}개 시도`} />
         <StatTile
-          label="병원 종별"
-          value={`${CLASSES.length}종`}
-          sub={SCOPE_NOTE}
+          label="진료 항목"
+          value={`${stats.size}가지`}
+          sub={`의무 게시 ${ITEM_KINDS}종`}
         />
+        <StatTile label="지역" value={`시군구 ${regions.length}곳`} />
+        <StatTile label="음식 사전" value={`${foods.length}가지`} sub="강아지·고양이" />
         <StatTile label="기준" value={`${DATA_YEAR}년`} sub={DATA_UPDATED} />
       </section>
 
@@ -76,54 +91,131 @@ export default async function HomePage() {
         <Adsense slotId={AD_SLOTS.home} />
       </div>
 
-      {featured.length > 0 && (
+      <section style={{ marginBottom: 36 }}>
+        <div className="sec-head">
+          <h2 className="sec-title">많이 찾는 진료비</h2>
+          <a target="_self" href={`/${ITEM_HUB_SLUG}`} className="sec-more">
+            전체 항목 보기
+          </a>
+        </div>
+        <div className="panel">
+          <p className="panel__desc">
+            전국 시군구 중간값들의 중간값입니다. 최저·최고는 한 곳만 있어도
+            잡히는 값이라 중간값으로 보시는 편이 실제에 가깝습니다.
+          </p>
+          <div className="table-scroll">
+            <table className="pr-table">
+              <thead>
+                <tr>
+                  <th scope="col">항목</th>
+                  <th scope="col" className="is-num">
+                    전국 중간값
+                  </th>
+                  <th scope="col" className="is-num">
+                    최저~최고
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {featured.map((i) => {
+                  const s = stats.get(i.slug);
+                  return (
+                    <tr key={i.slug}>
+                      <td>
+                        <a
+                          target="_self"
+                          href={`/${i.slug}`}
+                          className="pr-table__name pr-table__link"
+                        >
+                          {i.label}
+                        </a>
+                        <span className="pr-table__meta">
+                          {i.variant || i.group}
+                        </span>
+                      </td>
+                      <td className="is-num">
+                        <strong>{formatWon(s?.national_mid)}</strong>
+                      </td>
+                      <td className="is-num">
+                        {formatWonShort(s?.min_price)} ~{" "}
+                        {formatWonShort(s?.max_price)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {priciest.length > 0 && (
         <section style={{ marginBottom: 36 }}>
           <div className="sec-head">
-            <h2 className="sec-title">많이 찾는 항목</h2>
-            <a target="_self" href={`/${ITEM_HUB_SLUG}`} className="sec-more">
-              전체 항목 보기
+            <h2 className="sec-title">동네마다 이만큼 다릅니다</h2>
+            <a target="_self" href={`/${REGION_HUB_SLUG}`} className="sec-more">
+              지역별 보기
             </a>
           </div>
           <div className="panel">
             <p className="panel__desc">
-              전국 중간값입니다. 최저·최고는 한 곳만 있어도 잡히는 값이라
-              중간값을 기준으로 보시는 편이 실제에 가깝습니다.
+              전국을 100 으로 놓은 가격 수준입니다. 공개 항목이{" "}
+              {THIN_ITEM_COUNT}개 이상인 {solid.length}곳만 견줬습니다.
             </p>
             <div className="table-scroll">
               <table className="pr-table">
                 <thead>
                   <tr>
-                    <th scope="col">항목</th>
+                    <th scope="col">비싼 동네</th>
                     <th scope="col" className="is-num">
-                      중간값
+                      수준
                     </th>
+                    <th scope="col">싼 동네</th>
                     <th scope="col" className="is-num">
-                      최저~최고
+                      수준
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {featured.map((i) => (
-                    <tr key={i.item_slug}>
-                      <td>
-                        <a
-                          target="_self"
-                          href={`/${i.item_slug}`}
-                          className="pr-table__name pr-table__link"
-                        >
-                          {itemLabel(i)}
-                        </a>
-                        <span className="pr-table__meta">{i.category}</span>
-                      </td>
-                      <td className="is-num">
-                        <strong>{formatWon(i.median_price)}</strong>
-                      </td>
-                      <td className="is-num">
-                        {formatWonShort(i.min_price)} ~{" "}
-                        {formatWonShort(i.max_price)}
-                      </td>
-                    </tr>
-                  ))}
+                  {priciest.map((hi, i) => {
+                    const lo = cheapest[i];
+                    return (
+                      <tr key={hi.region_slug}>
+                        <td>
+                          <a
+                            target="_self"
+                            href={`/${hi.region_slug}`}
+                            className="pr-table__name pr-table__link"
+                          >
+                            {hi.sido_slug} {hi.sigungu_name}
+                          </a>
+                        </td>
+                        <td className="is-num">
+                          <span className={`rel rel--${indexSign(hi.price_index)}`}>
+                            {hi.price_index}
+                          </span>
+                        </td>
+                        <td>
+                          {lo && (
+                            <a
+                              target="_self"
+                              href={`/${lo.region_slug}`}
+                              className="pr-table__name pr-table__link"
+                            >
+                              {lo.sido_slug} {lo.sigungu_name}
+                            </a>
+                          )}
+                        </td>
+                        <td className="is-num">
+                          {lo && (
+                            <span className={`rel rel--${indexSign(lo.price_index)}`}>
+                              {lo.price_index}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -131,76 +223,63 @@ export default async function HomePage() {
         </section>
       )}
 
-      {showcase && byClass.length > 0 && (
+      {dangerous.length > 0 && (
         <section style={{ marginBottom: 36 }}>
           <div className="sec-head">
-            <h2 className="sec-title">
-              같은 {itemLabel(showcase)}, 어디서 받느냐에 따라
-            </h2>
-            <a target="_self" href={`/${CLASS_HUB_SLUG}`} className="sec-more">
-              종별로 보기
+            <h2 className="sec-title">🔴 이건 주면 안 됩니다</h2>
+            <a target="_self" href={`/${FOOD_HUB_SLUG}`} className="sec-more">
+              음식 사전 전체
             </a>
           </div>
-          <div className="panel">
-            <p className="panel__desc">
-              병원 종별 중간값입니다. 전체 종별 중간값은{" "}
-              {formatWon(classBase)}입니다.
-            </p>
-            <div className="table-scroll">
-              <table className="pr-table">
-                <thead>
-                  <tr>
-                    <th scope="col">병원 종별</th>
-                    <th scope="col" className="is-num">
-                      중간값
-                    </th>
-                    <th scope="col" className="is-num">
-                      전체 대비
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {byClass.map((r) => (
-                    <tr key={r.scope}>
-                      <td>
-                        <a
-                          target="_self"
-                          href={`/${r.scope}`}
-                          className="pr-table__name pr-table__link"
-                        >
-                          {r.scope}
-                        </a>
-                      </td>
-                      <td className="is-num">{formatWon(r.median_price)}</td>
-                      <td className="is-num">
-                        {classBase && r.median_price !== null ? (
-                          <span
-                            className={`rel rel--${relativeSign(r.median_price, classBase)}`}
-                          >
-                            {relative(r.median_price, classBase)}
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <div className="food-grid">
+            {dangerous.map((f) => (
+              <FoodCard key={f.id} food={f} />
+            ))}
           </div>
         </section>
       )}
+
+      <section style={{ marginBottom: 36 }}>
+        <div className="sec-head">
+          <h2 className="sec-title">음식 사전</h2>
+        </div>
+        <div className="bento-grid">
+          {ANIMALS.map((a) => {
+            const mine = foods.filter((f) => f.animal === a.key);
+            const c = countBySafety(mine);
+            return (
+              <a
+                target="_self"
+                key={a.slug}
+                href={`/${a.slug}`}
+                className="bento-card"
+              >
+                <div className="bento-card__icon" aria-hidden>
+                  {a.emoji}
+                </div>
+                <h3 className="bento-card__title">
+                  {a.subject} 먹어도 되는 음식
+                </h3>
+                <p className="bento-card__desc">
+                  {mine.length}가지 · {SAFETY_META.safe.emoji} {c.safe} ·{" "}
+                  {SAFETY_META.caution.emoji} {c.caution} ·{" "}
+                  {SAFETY_META.danger.emoji} {c.danger}
+                </p>
+              </a>
+            );
+          })}
+        </div>
+      </section>
 
       {widest.length > 0 && (
         <section style={{ marginBottom: 36 }}>
           <div className="sec-head">
-            <h2 className="sec-title">차이가 가장 큰 항목</h2>
+            <h2 className="sec-title">값이 가장 벌어지는 진료</h2>
           </div>
           <div className="panel">
             <p className="panel__desc">
-              집계된 최저와 최고가 몇 배 벌어지는지입니다. 이런 항목일수록
-              진료 전에 총액을 물어보는 편이 낫습니다.
+              집계된 최저와 최고가 몇 배 차이 나는지입니다. 이런 항목일수록
+              가기 전에 값을 물어보는 편이 낫습니다.
             </p>
             <div className="table-scroll">
               <table className="pr-table">
@@ -216,19 +295,18 @@ export default async function HomePage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {widest.map(({ item, ratio }) => (
-                    <tr key={item.item_slug}>
+                  {widest.map(({ item, s, ratio }) => (
+                    <tr key={item.slug}>
                       <td>
                         <a
                           target="_self"
-                          href={`/${item.item_slug}`}
+                          href={`/${item.slug}`}
                           className="pr-table__name pr-table__link"
                         >
-                          {itemLabel(item)}
+                          {itemFullLabel(item)}
                         </a>
-                        <span className="pr-table__meta">{item.category}</span>
                       </td>
-                      <td className="is-num">{formatWon(item.median_price)}</td>
+                      <td className="is-num">{formatWon(s?.national_mid)}</td>
                       <td className="is-num">
                         <strong>{ratioText(ratio)}</strong>
                       </td>
@@ -250,10 +328,9 @@ export default async function HomePage() {
         </div>
         <div className="sido-block">
           <div className="region-chips">
-            {REGIONS.map((s) => (
+            {SIDOS.map((s) => (
               <a target="_self" key={s.slug} href={`/${s.slug}`}>
-                <span aria-hidden>{s.emoji}</span>
-                {s.name}
+                {s.slug}
               </a>
             ))}
           </div>
@@ -262,25 +339,25 @@ export default async function HomePage() {
 
       <section style={{ marginBottom: 36 }}>
         <div className="sec-head">
-          <h2 className="sec-title">분류로 찾기</h2>
+          <h2 className="sec-title">묶음으로 찾기</h2>
           <a target="_self" href={`/${ITEM_HUB_SLUG}`} className="sec-more">
-            전체 분류 보기
+            전체 항목 보기
           </a>
         </div>
         <div className="bento-grid">
-          {groups.slice(0, 6).map((g) => (
+          {groups.map((g) => (
             <a
               target="_self"
-              key={g.category}
+              key={g.group}
               href={`/${ITEM_HUB_SLUG}`}
               className="bento-card"
             >
-              <h3 className="bento-card__title">{g.category}</h3>
+              <h3 className="bento-card__title">{g.group}</h3>
               <p className="bento-card__desc">
-                {g.items.length}개 항목 ·{" "}
+                {g.items.length}가지 ·{" "}
                 {g.items
                   .slice(0, 3)
-                  .map((i) => itemLabel(i))
+                  .map((i) => i.label)
                   .join(", ")}
               </p>
             </a>
@@ -288,57 +365,25 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section style={{ marginBottom: 36 }}>
-        <div className="sec-head">
-          <h2 className="sec-title">알아두면 돈이 되는 것들</h2>
-        </div>
-        <div className="bento-grid">
-          {GUIDES.map((g) => (
-            <a
-              target="_self"
-              key={g.slug}
-              href={`/${g.slug}`}
-              className="bento-card"
-            >
-              <div className="bento-card__icon" aria-hidden>
-                {g.emoji}
-              </div>
-              <h3 className="bento-card__title">
-                {g.title.split(" — ")[0].split(",")[0]}
-              </h3>
-              <p className="bento-card__desc">{g.summary}</p>
-            </a>
-          ))}
-        </div>
-      </section>
-
       <section className="panel">
-        <h2 className="panel__title">비급여가 뭔가요</h2>
+        <h2 className="panel__title">왜 병원마다 값이 다른가</h2>
         <p className="panel__desc">
-          건강보험이 부담하지 않아 <strong>환자가 전액 내는 항목</strong>입니다.
-          급여 항목은 나라가 수가를 정해두지만 비급여는 각 병원이 스스로 값을
-          매깁니다. 그래서 같은 이름의 진료·서류인데도 금액이 몇 배씩
-          벌어집니다.
+          사람 병원과 달리 동물병원 진료에는 건강보험이 없습니다. 나라가 정한
+          수가가 없으니 <strong>병원이 값을 스스로 매깁니다.</strong> 그래서 같은
+          예방접종인데도 동네에 따라 두세 배씩 벌어집니다.
         </p>
         <p className="panel__desc" style={{ marginBottom: 0 }}>
-          <strong>가격 차이가 곧 품질 차이는 아닙니다.</strong> 다만 미리
-          물어보지 않으면 생각보다 많이 나올 수 있습니다. 병원별 실제 가격은{" "}
-          <a
-            href={OFFICIAL_LINKS.hira}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: "underline" }}
-          >
-            심사평가원
-          </a>
-          에서 조회하세요.
+          <strong>값이 싸다고 진료가 나쁜 것은 아닙니다.</strong> 다만 미리
+          물어보지 않으면 생각보다 많이 나올 수 있습니다. 2023년부터 동물병원은
+          주요 진료비를 병원 안에 게시할 의무가 있으니, 가기 전에 전화로 물어보는
+          것이 가장 확실합니다.
         </p>
       </section>
 
       <DataNotice />
 
       <div className="ad-slot">
-        <Adsense slotId={AD_SLOTS.home} />
+        <Adsense slotId={AD_SLOTS.bottom} />
       </div>
     </>
   );

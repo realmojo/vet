@@ -5,7 +5,7 @@ export const metadata: Metadata = buildMetadata({
   path: "/privacy",
   title: `개인정보처리방침 | ${SITE.name}`,
   description:
-    "비급여 진료비가 수집하는 정보와 이용 목적, 쿠키와 광고 게재 방식, 이용자의 권리를 안내합니다.",
+    "동물병원비가 수집하는 정보와 이용 목적, 쿠키와 광고 게재 방식, 이용자의 권리를 안내합니다.",
 });
 
 export default function PrivacyPage() {

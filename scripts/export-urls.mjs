@@ -12,12 +12,12 @@ import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
-import { CLASS_TABLES, REGION_TABLES } from "./kosis-tables.mjs";
+import { SIDOS, ITEMS } from "./fee-codes.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
-dotenv.config({ path: path.join(ROOT, ".env.local") });
+dotenv.config({ path: path.join(ROOT, ".env.local"), quiet: true });
 
-const SITE = "https://medifee.keywordegg.com";
+const SITE = "https://vet.keywordegg.com";
 const abs = (p) =>
   !p || p === "/"
     ? SITE
@@ -26,24 +26,21 @@ const abs = (p) =>
         .map(encodeURIComponent)
         .join("/")}`;
 
+/** lib/menu.ts · lib/foods.ts 의 고정 경로와 같아야 한다 */
 const STATIC = [
   "/",
-  "/항목",
+  "/진료비",
   "/지역",
-  "/종별",
+  "/음식",
+  "/강아지",
+  "/고양이",
   "/about",
   "/contact",
   "/privacy",
   "/terms",
 ];
 
-/** lib/guides.ts 와 같아야 한다 */
-const GUIDES = [
-  "/비급여-뜻",
-  "/비급여-진료비-조회",
-  "/비급여-실비보험-청구",
-  "/병원비-환급금-조회",
-];
+const ANIMAL_SLUG = { dog: "강아지", cat: "고양이" };
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -56,23 +53,28 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const scopes = [
-    ...REGION_TABLES.map(([name]) => name),
-    ...CLASS_TABLES.map(([name]) => name),
-  ];
-
   const urls = [
     ...STATIC.map(abs),
-    ...GUIDES.map(abs),
-    ...scopes.map((s) => abs(`/${s}`)),
+    ...SIDOS.map((s) => abs(`/${s.short}`)),
+    ...ITEMS.map((i) => abs(`/${i.slug}`)),
   ];
 
-  const { data: items, error } = await sb
-    .from("medifee_items")
-    .select("item_slug")
+  const { data: regions, error: regErr } = await sb
+    .from("vet_regions")
+    .select("region_slug")
     .limit(1000);
-  if (error) throw new Error(error.message);
-  for (const r of items ?? []) urls.push(abs(`/${r.item_slug}`));
+  if (regErr) throw new Error(regErr.message);
+  for (const r of regions ?? []) urls.push(abs(`/${r.region_slug}`));
+
+  const { data: foods, error: foodErr } = await sb
+    .from("vet_foods")
+    .select("animal, slug")
+    .eq("status", "published")
+    .limit(1000);
+  if (foodErr) throw new Error(foodErr.message);
+  for (const f of foods ?? []) {
+    urls.push(abs(`/${ANIMAL_SLUG[f.animal] ?? f.animal}-${f.slug}`));
+  }
 
   const uniq = [...new Set(urls)];
   const out = path.join(ROOT, "naver-indexing/urls.txt");
@@ -80,7 +82,7 @@ async function main() {
   fs.writeFileSync(out, `${uniq.join("\n")}\n`, "utf8");
 
   console.log(
-    `고정 ${STATIC.length} · 가이드 ${GUIDES.length} · 지역/종별 ${scopes.length} · 항목 ${items?.length ?? 0}`,
+    `고정 ${STATIC.length} · 시도 ${SIDOS.length} · 항목 ${ITEMS.length} · 지역 ${regions?.length ?? 0} · 음식 ${foods?.length ?? 0}`,
   );
   console.log(`합계 ${uniq.length}\n${out}`);
 }

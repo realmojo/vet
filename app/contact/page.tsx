@@ -33,7 +33,7 @@ export default function ContactPage() {
         <h2 className="panel__title">이런 문의를 받습니다</h2>
         <ul className="panel__desc" style={{ paddingLeft: 18, marginBottom: 0 }}>
           <li>
-            <strong>가격 정정 요청</strong> — 의료기관에서 현재 가격이 표시된 값과
+            <strong>가격 정정 요청</strong> — 동물병원에서 현재 가격이 표시된 값과
             다르다고 알려주시는 경우. 저희 데이터는{" "}
             {DATA_YEAR}년 기준 집계값이라 실제 가격과 차이가 있을 수 있습니다.
           </li>

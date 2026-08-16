@@ -48,14 +48,22 @@ img {
   --c-text-sub: #6b7280;
   --c-line: #ededea;
 
-  /* 가이드 카테고리 색 (lib/contents.ts 의 key 와 짝이 맞아야 한다) */
+  /* 진료비 묶음 뱃지 */
   --cat-item: #c49a1a;
   --cat-region: #5a9e6f;
-  --cat-guide: #7a8fc4;
+  --cat-food: #7a8fc4;
 
-  /* 요금 비교용 (평균보다 싸다 / 비싸다) */
+  /* 요금 비교용 (전국보다 싸다 / 비싸다) */
   --price-low: #2f8f5b;
   --price-high: #c05555;
+
+  /* 음식 신호등. 색만으로 구분하지 않고 항상 말·이모지와 함께 쓴다 */
+  --safe: #2f8f5b;
+  --safe-bg: #e7f4ec;
+  --caution: #b8860b;
+  --caution-bg: #fbf3e0;
+  --danger: #c04242;
+  --danger-bg: #fbeaea;
 
   --r-md: 14px;
   --r-lg: 18px;
@@ -189,18 +197,13 @@ body {
   font-weight: 700;
 }
 
-.cat-badge--price {
-  color: var(--cat-price);
+.cat-badge--item {
+  color: var(--cat-item);
   background: rgb(196 154 26 / 0.12);
 }
 
-.cat-badge--choose {
-  color: var(--cat-choose);
-  background: rgb(90 158 111 / 0.12);
-}
-
-.cat-badge--prepare {
-  color: var(--cat-prepare);
+.cat-badge--food {
+  color: var(--cat-food);
   background: rgb(122 143 196 / 0.12);
 }
 
@@ -1694,4 +1697,246 @@ a.cta-btn {
 /* 위에서 슬롯을 숨기면 .ad-slot 만 남아 여백이 뜬다. 그 여백도 걷어낸다. */
 .ad-slot:has(ins.adsbygoogle[data-ad-status^="unfill"]) {
   margin: 0 !important;
+}
+
+/* ==========================================================================
+   음식 사전
+
+   신호등(안전·주의·위험)은 **색만으로 구분하지 않는다.** 색약인 사람에게
+   초록과 빨강은 잘 갈라지지 않으므로 이모지와 글자를 항상 함께 붙인다.
+   ========================================================================== */
+
+.safety {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.safety--safe {
+  color: var(--safe);
+  background: var(--safe-bg);
+}
+
+.safety--caution {
+  color: var(--caution);
+  background: var(--caution-bg);
+}
+
+.safety--danger {
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+/* 목록 카드 */
+.food-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.food-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--c-surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-sm);
+  transition: transform 0.2s, box-shadow 0.2s;
+  color: inherit;
+}
+
+.food-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-md);
+}
+
+.food-card__emoji {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--c-primary-light);
+  font-size: 22px;
+}
+
+.food-card__body {
+  min-width: 0;
+}
+
+.food-card__name {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.food-card__note {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.food-card__note--safe { color: var(--safe); }
+.food-card__note--caution { color: var(--caution); }
+.food-card__note--danger { color: var(--danger); }
+
+/* 상세 상단 한 줄 판정 */
+.verdict {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 0 0 24px;
+  padding: 18px 20px;
+  border-radius: var(--r-md);
+  border-left: 4px solid;
+}
+
+.verdict--safe {
+  background: var(--safe-bg);
+  border-color: var(--safe);
+}
+
+.verdict--caution {
+  background: var(--caution-bg);
+  border-color: var(--caution);
+}
+
+.verdict--danger {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.verdict__mark {
+  flex-shrink: 0;
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.verdict__head {
+  margin: 0 0 5px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--c-text);
+}
+
+.verdict__body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #4a4f45;
+  word-break: keep-all;
+}
+
+/* 좋은 점 / 위험 두 칸 */
+.pro-con {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 1.6em 0;
+}
+
+.pro-con__box {
+  padding: 16px 18px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-line);
+}
+
+.pro-con__box h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.pro-con__box ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.pro-con__box li {
+  margin-bottom: 6px;
+}
+
+.pro-con__box--good { background: var(--safe-bg); }
+.pro-con__box--good h3 { color: var(--safe); }
+.pro-con__box--bad { background: var(--danger-bg); }
+.pro-con__box--bad h3 { color: var(--danger); }
+
+/* 증상 경고 */
+.symptom-box {
+  margin: 1.6em 0;
+  padding: 16px 18px;
+  border-radius: var(--r-md);
+  background: #fff8e8;
+  border: 1px solid #f0e0b8;
+}
+
+.symptom-box h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #8a6d1f;
+}
+
+.symptom-box ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #6b5a2a;
+}
+
+/* 다른 이름으로 부르는 것들 */
+.alias-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.alias-row span {
+  padding: 4px 10px;
+  background: #f1f2ef;
+  border-radius: 12px;
+  font-size: 12px;
+  color: var(--c-text-sub);
+}
+
+@media (max-width: 768px) {
+  .food-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pro-con {
+    grid-template-columns: 1fr;
+  }
+
+  .verdict {
+    padding: 15px 16px;
+    gap: 11px;
+  }
+
+  .verdict__head {
+    font-size: 16px;
+  }
+
+  .verdict__body {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .food-grid {
+    grid-template-columns: 1fr;
+  }
 }

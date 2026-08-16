@@ -1,5 +1,5 @@
 {
-  "name": "medifee",
+  "name": "vet",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,8 +11,11 @@
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "probe:kosis": "node scripts/import-kosis.mjs --probe",
-    "import:kosis": "node scripts/import-kosis.mjs"
+    "typecheck": "tsc --noEmit",
+    "probe:fees": "node scripts/import-fees.mjs --probe",
+    "import:fees": "node scripts/import-fees.mjs",
+    "load:fees": "node scripts/import-fees.mjs --load-only",
+    "import:foods": "node scripts/import-foods.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.2",

@@ -5,11 +5,12 @@ import { AD_CLIENT } from "@/lib/ads";
 import SiteHeader from "@/components/layout/SiteHeader";
 import SiteFooter from "@/components/layout/SiteFooter";
 
-const title = "비급여 진료비 - 항목별 금액과 지역·병원 종별 차이";
+const title = "동물병원비 — 우리 동네 진료비와 먹어도 되는 음식";
 const description =
-  "도수치료 중간값 10만원, MRI 45만원. 심사평가원이 공개한 2025년 비급여 진료비를 항목별·지역별·병원 종별로 정리했습니다.";
+  "종합백신 2만 5천원, 초진 진찰료 9천 5백원. 농림축산식품부가 공개한 동물병원 진료비를 시군구 201곳으로 정리하고, 강아지·고양이가 먹어도 되는 음식을 함께 담았습니다.";
 
 const GOOGLE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION ?? "";
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "";
 
 export const metadata: Metadata = {
   ...buildMetadata({
@@ -17,13 +18,13 @@ export const metadata: Metadata = {
     title,
     description,
     keywords: [
-      "비급여",
-      "비급여 진료비",
-      "도수치료 비용",
-      "MRI 비용",
-      "상급병실료 1인실",
-      "진단서 비용",
-      "제증명수수료",
+      "동물병원 진료비",
+      "강아지 예방접종 비용",
+      "고양이 병원비",
+      "종합백신 가격",
+      "동물병원 엑스레이 비용",
+      "강아지가 먹으면 안되는 음식",
+      "고양이 먹어도 되는 음식",
     ],
   }),
   metadataBase: new URL(SITE.url),
@@ -31,7 +32,7 @@ export const metadata: Metadata = {
   authors: [{ name: SITE.name, url: SITE.url }],
   creator: SITE.name,
   publisher: SITE.name,
-  category: "health",
+  category: "pets",
   formatDetection: { telephone: false, email: false, address: false },
   verification: {
     ...(GOOGLE_VERIFICATION ? { google: GOOGLE_VERIFICATION } : {}),
@@ -95,34 +96,33 @@ export default function RootLayout({
         <script
           id="json-ld-organization"
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationJsonLd),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         <script
           async
           crossOrigin="anonymous"
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${AD_CLIENT}`}
         />
-        {/* Google tag (gtag.js) */}
-        <script
-          async
-          src="https://www.googletagmanager.com/gtag/js?id=G-5BM9W5BC3P"
-        />
-        <script
-          id="google-analytics"
-          dangerouslySetInnerHTML={{
-            __html: `
+        {/* 측정 ID 를 아직 안 받았으면 gtag 자체를 넣지 않는다 */}
+        {GA_ID && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            />
+            <script
+              id="google-analytics"
+              dangerouslySetInnerHTML={{
+                __html: `
             window.dataLayer = window.dataLayer || [];
-            function gtag() {
-              dataLayer.push(arguments);
-            }
+            function gtag() { dataLayer.push(arguments); }
             gtag('js', new Date());
-
-            gtag('config', 'G-5BM9W5BC3P');
+            gtag('config', '${GA_ID}');
           `,
-          }}
-        />
+              }}
+            />
+          </>
+        )}
       </head>
       <body>
         <SiteHeader />

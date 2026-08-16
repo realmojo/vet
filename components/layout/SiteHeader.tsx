@@ -16,8 +16,8 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="site-header__inner">
         <a target="_self" href="/" className="site-logo">
-          <span aria-hidden>🩺</span>
-          <span>비급여 진료비</span>
+          <span aria-hidden>🐾</span>
+          <span>동물병원비</span>
         </a>
 
         <nav className="site-nav" aria-label="주요 메뉴">

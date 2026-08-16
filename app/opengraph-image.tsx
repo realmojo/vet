@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "MediFee - Non-covered medical prices in Korea";
+export const alt = "Vet Fee - Animal hospital prices in Korea";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -51,7 +51,7 @@ export default async function Image() {
             fontSize: 96,
           }}
         >
-          🩺
+          🐾
         </div>
 
         <div
@@ -64,7 +64,7 @@ export default async function Image() {
             marginBottom: 18,
           }}
         >
-          MEDIFEE
+          VET FEE
         </div>
 
         <div
@@ -75,7 +75,7 @@ export default async function Image() {
             fontWeight: 500,
           }}
         >
-          Non-covered Medical Prices by Item
+          Animal Hospital Prices by District
         </div>
       </div>
     ),

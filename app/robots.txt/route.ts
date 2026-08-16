@@ -7,7 +7,7 @@ import { SITE } from "@/lib/seo";
  * 다음(Daum) 웹마스터도구는 robots.txt 안의 주석으로 사이트 소유를 확인한다.
  * 그래서 metadata 파일 대신 라우트 핸들러로 전체 내용을 직접 만든다.
  *
- * 다음 웹마스터도구에 medifee.keywordegg.com 을 등록하면 받는 확인 문자열을
+ * 다음 웹마스터도구에 vet.keywordegg.com 을 등록하면 받는 확인 문자열을
  * DAUM_VERIFICATION 환경변수에 넣는다. 비어 있으면 그 줄이 빠진다.
  */
 const DAUM_VERIFICATION = process.env.DAUM_VERIFICATION ?? "";

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const SITE = {
-  name: "비급여 진료비",
-  nameEn: "MediFee",
-  url: "https://medifee.keywordegg.com",
+  name: "동물병원비",
+  nameEn: "Vet Fee",
+  url: "https://vet.keywordegg.com",
   locale: "ko_KR",
   ogImage: "/opengraph-image",
   description:
-    "도수치료 중간값 10만원, 상급종합병원은 얼마일까. 심평원이 공개한 2025년 비급여 진료비를 항목별·지역별·병원 종별로 정리했습니다.",
+    "종합백신 2만 5천원, 그런데 우리 동네는 얼마일까. 농림축산식품부가 공개한 동물병원 진료비를 시군구별로 정리하고, 강아지·고양이가 먹어도 되는 음식을 함께 담았습니다.",
 } as const;
 
 export function absoluteUrl(path: string): string {
@@ -26,7 +26,12 @@ export interface BuildMetadataInput {
 }
 
 export function buildMetadata({
-  path, title, description, keywords, type = "website", image,
+  path,
+  title,
+  description,
+  keywords,
+  type = "website",
+  image,
 }: BuildMetadataInput): Metadata {
   const url = absoluteUrl(path);
   const socialImage = image ?? SITE.ogImage;
@@ -36,14 +41,32 @@ export function buildMetadata({
     ...(keywords?.length ? { keywords } : {}),
     alternates: { canonical: url },
     openGraph: {
-      title, description, url,
-      siteName: SITE.name, locale: SITE.locale, type,
-      images: [{ url: socialImage, width: 1200, height: 630, alt: `${SITE.name} - ${title}` }],
+      title,
+      description,
+      url,
+      siteName: SITE.name,
+      locale: SITE.locale,
+      type,
+      images: [
+        { url: socialImage, width: 1200, height: 630, alt: `${SITE.name} - ${title}` },
+      ],
     },
-    twitter: { card: "summary_large_image", title, description, images: [socialImage] },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [socialImage],
+    },
     robots: {
-      index: true, follow: true,
-      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
     },
   };
 }
@@ -53,7 +76,10 @@ export function breadcrumbJsonLd(trail: Array<{ name: string; path: string }>) {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: trail.map((item, i) => ({
-      "@type": "ListItem", position: i + 1, name: item.name, item: absoluteUrl(item.path),
+      "@type": "ListItem",
+      position: i + 1,
+      name: item.name,
+      item: absoluteUrl(item.path),
     })),
   };
 }
@@ -64,26 +90,35 @@ export function faqJsonLd(items: Array<{ question: string; answer: string }>) {
     "@type": "FAQPage",
     inLanguage: "ko-KR",
     mainEntity: items.map((i) => ({
-      "@type": "Question", name: i.question,
+      "@type": "Question",
+      name: i.question,
       acceptedAnswer: { "@type": "Answer", text: i.answer },
     })),
   };
 }
 
-/** 공개 데이터를 집계한 화면이므로 Article 이 아니라 Dataset 으로 표기한다 */
+/**
+ * 진료비 화면은 공개 자료를 집계한 것이라 Article 이 아니라 Dataset 으로 적는다.
+ * 사람이 쓴 글이 아닌데 Article 로 표기하면 실제와 어긋난다.
+ */
 export function datasetJsonLd({
-  name, path, description,
-}: { name: string; path: string; description: string }) {
+  name,
+  path,
+  description,
+}: {
+  name: string;
+  path: string;
+  description: string;
+}) {
   return {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name, description,
+    name,
+    description,
     url: absoluteUrl(path),
     inLanguage: "ko-KR",
-    creator: { "@type": "Organization", name: "건강보험심사평가원" },
-    isBasedOn:
-      "https://kosis.kr/statHtml/statHtml.do?orgId=354&tblId=DT_354006_2021A022",
-    temporalCoverage: "2025",
+    creator: { "@type": "Organization", name: "농림축산식품부" },
+    isBasedOn: "https://animalclinicfee.or.kr",
     publisher: { "@type": "Organization", name: SITE.name, url: SITE.url },
   };
 }
