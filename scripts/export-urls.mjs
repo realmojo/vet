@@ -77,7 +77,8 @@ async function main() {
   }
 
   const uniq = [...new Set(urls)];
-  const out = path.join(ROOT, "naver-indexing/urls.txt");
+  // URL 목록은 m/naver-indexing/data/<사이트>/ 한곳에서 관리한다.
+  const out = path.resolve(ROOT, "../naver-indexing/data/vet/urls.txt");
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, `${uniq.join("\n")}\n`, "utf8");
 
