@@ -10,7 +10,9 @@ const description =
   "종합백신 2만 5천원, 초진 진찰료 9천 5백원. 농림축산식품부가 공개한 동물병원 진료비를 시군구 201곳으로 정리하고, 강아지·고양이가 먹어도 되는 음식을 함께 담았습니다.";
 
 const GOOGLE_VERIFICATION = process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION ?? "";
-const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "";
+// keywordegg 계열이 한 속성을 함께 쓴다. 환경변수로 덮어쓸 수 있게 두되
+// 기본값을 공통 ID 로 둔다 — 비어 있으면 GA 가 아예 안 붙는다.
+const GA_ID = process.env.NEXT_PUBLIC_GA_ID || "G-5BM9W5BC3P";
 
 export const metadata: Metadata = {
   ...buildMetadata({
